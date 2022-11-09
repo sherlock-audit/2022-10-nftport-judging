@@ -3,7 +3,7 @@
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/118 
 
 ## Found by 
-ignacio, keccak123
+keccak123, ignacio
 
 ## Summary
 
@@ -54,7 +54,7 @@ Downgrading to medium severity, fails to show an exploit pattern.
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/106 
 
 ## Found by 
-Lambda, ak1, obront, bin2chen, minhquanym, JohnSmith, ctf\_sec, 8olidity
+bin2chen, 8olidity, ak1, ctf\_sec, minhquanym, obront, Lambda, JohnSmith
 
 ## Summary
 In Factory contract, deploy and call methods are using the signature based approach for deployment. This is not safe when we look at the way the signature is comes from user.
@@ -92,7 +92,7 @@ I strongly recommend to follow [EIP-712](https://eips.ethereum.org/EIPS/eip-712)
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/95 
 
 ## Found by 
-cccz, GimelSec
+GimelSec, cccz
 
 ## Summary
 The supply of NFT for each tokenID in ERC1155NFTProduct cannot be modified after the first minting
@@ -132,7 +132,7 @@ We've decided to not change the behaviour at this point and revisit it once we h
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/85 
 
 ## Found by 
-0xSmartContract, GimelSec
+GimelSec, 0xSmartContract
 
 ## Summary
 
@@ -178,7 +178,7 @@ I believe this only applies to free mints since `msg.value` will be 0 when calle
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/83 
 
 ## Found by 
-rvierdiiev, ak1, ElKu, obront, GimelSec, pashov, cccz, Dravee, joestakey, JohnSmith, ctf\_sec, JohnnyTime
+Dravee, JohnSmith, cccz, rvierdiiev, ak1, ctf\_sec, JohnnyTime, GimelSec, pashov, obront, joestakey, ElKu
 
 ## Summary
 
@@ -229,7 +229,71 @@ Manual Review
 
 Check `royaltiesBps <= ROYALTIES_BASIS` both in `initialize()` and `update()` functions.
 
-# Issue M-6: registerTemplate() can't handle properly when ITemplate version  is 0 
+# Issue M-6: Freezing roles in ERC721NFTProduct and ERC1155NFTProduct is moot 
+
+Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/81 
+
+## Found by 
+0x52
+
+## Summary
+
+In ERC721NFTProduct and ERC1155NFTProduct roles can be frozen which is supposed to lock role to current addresses and not allow any changes. The problem is that admin can still use AccessControlUpgradable#grantRole and revokeRole to grant and remove roles to addresses because hasRole allows "ADMIN_ROLE" to bypass all role restrictions even "DEFAULT_ADMIN_ROLE".
+
+## Vulnerability Detail
+
+    function hasRole(bytes32 role, address account)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return
+            super.hasRole(ADMIN_ROLE, account) || super.hasRole(role, account);
+    }
+
+In GranularRoles.sol and AccessControlUpgradable.sol, developers are careful to never grant the "DEFAULT_ADMIN_ROLE" to any user. Additionally they never set the admin role of any role so that it's admin will remain "DEFAULT_ADMIN_ROLE". In theory this should make so that there is no way to grant or revoke roles outside of GranularRoles#_initRoles and updateRoles. The issue is that the override by GranularRoles#hasRole allows "ADMIN_ROLE" to bypass any role restriction including "DEFAULT_ADMIN_ROLE". This allows "ADMIN_ROLE" to directly call AccessControlUpgradable#grantRole and revokeRole, which makes the entire freezing system useless as it doesn't actually stop any role modification.
+
+## Impact
+
+Freezing roles doesn't actually prevent "ADMIN_ROLE" from modifying roles as intended. Submitting as high due to gross over-extension of admin authority clearly violating intended guardrails.
+
+## Code Snippet
+
+[GranularRoles.sol#L87-L96](https://github.com/sherlock-audit/2022-10-nftport/blob/main/evm-minting-master/contracts/lib/GranularRoles.sol#L87-L96)
+
+## Tool used
+
+Manual Review
+
+## Recommendation
+
+Override AccessControlUpgradable#grantRole and revokeRole in GranularRoles.sol to revert when called:
+
+     GranularRoles.sol
+
+    +   function grantRole(bytes32 role, address account) public virtual override {
+    +       revert();
+    +   }
+
+    +   function revokeRole(bytes32 role, address account) public virtual override {
+    +       revert();
+    +   }
+
+## Discussion
+
+**Evert0x**
+
+Admin role having more power than intended is not a med/high issue for the protocol team.
+
+**hyperspacebunny**
+
+@Evert0x This actually is valid and pretty high priority for us since it's a workaround for some pretty explicit rules in our permissions system. Can you reopen it?
+
+
+
+# Issue M-7: registerTemplate() can't handle properly when ITemplate version  is 0 
 
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/80 
 
@@ -293,7 +357,7 @@ Manual Review
 
 ```
 
-# Issue M-7: _validateDeploymentConfig function in NFTCollection.sol doesn't check all conditions 
+# Issue M-8: _validateDeploymentConfig function in NFTCollection.sol doesn't check all conditions 
 
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/51 
 
@@ -340,7 +404,7 @@ Add a require statement in the `_validateDeploymentConfig` function:
 require(config.tokensPerMint <= config.maxSupply, "Tokens per mint must be lte Maximum supply");
 ```
 
-# Issue M-8: Factory uses signature that do not have expiration 
+# Issue M-9: Factory uses signature that do not have expiration 
 
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/46 
 
@@ -372,7 +436,7 @@ Manual Review
 ## Recommendation
 Add expiration param to the signature.
 
-# Issue M-9: Missing check for equal length arrays in transferByOwnerBatch and mintByOwnerBatch 
+# Issue M-10: Missing check for equal length arrays in transferByOwnerBatch and mintByOwnerBatch 
 
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/33 
 
