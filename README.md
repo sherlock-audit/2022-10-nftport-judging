@@ -3,7 +3,7 @@
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/118 
 
 ## Found by 
-keccak123, ignacio
+keccak123, 0xheynacho
 
 ## Summary
 
@@ -47,6 +47,14 @@ Instead of writing functions to accept several arguments that are hashed inside 
 
 Downgrading to medium severity, fails to show an exploit pattern.
 
+**hyperspacebunny**
+
+Fixed in https://github.com/nftport/evm-minting-sherlock-fixes/pull/18
+
+**rayn731**
+
+Fixed, and it follows EIP-712 standard for hashing and signing data.
+
 
 
 # Issue M-2: Factory.sol : Issue with arbitrary data as signature in signature based call and deploy methods. 
@@ -54,7 +62,7 @@ Downgrading to medium severity, fails to show an exploit pattern.
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/106 
 
 ## Found by 
-bin2chen, 8olidity, ak1, ctf\_sec, minhquanym, obront, Lambda, JohnSmith
+obront, 8olidity, bin2chen, ak1, minhquanym, ctf\_sec, JohnSmith, Lambda
 
 ## Summary
 In Factory contract, deploy and call methods are using the signature based approach for deployment. This is not safe when we look at the way the signature is comes from user.
@@ -86,6 +94,18 @@ I strongly recommend to follow [EIP-712](https://eips.ethereum.org/EIPS/eip-712)
 2.) The chain ID is included in the domain separator
 5.) There is a type hash (of the function name / parameters)
 6.) The domain separator does not allow reuse across different projects, phishing with an innocent DApp is no longer possible (it would be shown to the user that he is signing data for Rigor, which he would off course not do on a different site)
+
+## Discussion
+
+**hyperspacebunny**
+
+Fixed in https://github.com/nftport/evm-minting-sherlock-fixes/pull/18
+
+**rayn731**
+
+Fixed, follows EIP-712 standard for hashing and signing data.
+
+
 
 # Issue M-3: The supply of NFT for each tokenID in ERC1155NFTProduct cannot be modified after the first minting 
 
@@ -132,7 +152,7 @@ We've decided to not change the behaviour at this point and revisit it once we h
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/85 
 
 ## Found by 
-GimelSec, 0xSmartContract
+0xSmartContract, GimelSec
 
 ## Summary
 
@@ -171,6 +191,14 @@ Or just replace `_safeMint()` with `_mint()`.
 
 I believe this only applies to free mints since `msg.value` will be 0 when called from the attacker's contract and `mint()` will revert due to the `paymentProvided` modifier.
 
+**hyperspacebunny**
+
+Fixed in https://github.com/nftport/evm-minting-sherlock-fixes/pull/14
+
+**rayn731**
+
+Fixed, the fix uses reentrancy guard to prevent the bypass.
+
 
 
 # Issue M-5: Template implementations doesn't validate configurations properly 
@@ -178,7 +206,7 @@ I believe this only applies to free mints since `msg.value` will be 0 when calle
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/83 
 
 ## Found by 
-Dravee, JohnSmith, cccz, rvierdiiev, ak1, ctf\_sec, JohnnyTime, GimelSec, pashov, obront, joestakey, ElKu
+ElKu, rvierdiiev, obront, pashov, ctf\_sec, joestakey, ak1, JohnnyTime, GimelSec, Dravee, JohnSmith, cccz
 
 ## Summary
 
@@ -228,6 +256,19 @@ Manual Review
 ## Recommendation
 
 Check `royaltiesBps <= ROYALTIES_BASIS` both in `initialize()` and `update()` functions.
+
+## Discussion
+
+**hyperspacebunny**
+
+Fixed in https://github.com/nftport/evm-minting-sherlock-fixes/pull/11
+
+**rayn731**
+
+LGTM, It checks `royaltiesBps` both in `initialize()` and `update()` functions.
+And uses `_validatePropertyChange()` to check values both in `initialize()` and `updateConfig()` functions.
+
+
 
 # Issue M-6: Freezing roles in ERC721NFTProduct and ERC1155NFTProduct is moot 
 
@@ -290,6 +331,18 @@ Admin role having more power than intended is not a med/high issue for the proto
 **hyperspacebunny**
 
 @Evert0x This actually is valid and pretty high priority for us since it's a workaround for some pretty explicit rules in our permissions system. Can you reopen it?
+
+**hyperspacebunny**
+
+Fixed in https://github.com/nftport/evm-minting-sherlock-fixes/pull/15
+
+**rayn731**
+
+The fix will disable `DEFAULT_ADMIN_ROLE` to grant/revoke roles, but `_owner` still has the ability to grant/revoke roles even if all roles are frozen?
+
+**hyperspacebunny**
+
+Yup, our current intent is that the owner should always have control over the roles if they want to self-manage, freezing is just to remove the delegation to `ADMIN_ROLE`
 
 
 
@@ -357,6 +410,18 @@ Manual Review
 
 ```
 
+## Discussion
+
+**hyperspacebunny**
+
+Fixed in https://github.com/nftport/evm-minting-sherlock-fixes/pull/4
+
+**rayn731**
+
+Fixed, it prevents using version 0, only > 0 is allowed.
+
+
+
 # Issue M-8: _validateDeploymentConfig function in NFTCollection.sol doesn't check all conditions 
 
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/51 
@@ -404,6 +469,18 @@ Add a require statement in the `_validateDeploymentConfig` function:
 require(config.tokensPerMint <= config.maxSupply, "Tokens per mint must be lte Maximum supply");
 ```
 
+## Discussion
+
+**hyperspacebunny**
+
+Fixed in https://github.com/nftport/evm-minting-sherlock-fixes/pull/7
+
+**rayn731**
+
+Fixed, it checks tokens per mint must be less than max supply.
+
+
+
 # Issue M-9: Factory uses signature that do not have expiration 
 
 Source: https://github.com/sherlock-audit/2022-10-nftport-judging/issues/46 
@@ -435,6 +512,18 @@ Manual Review
 
 ## Recommendation
 Add expiration param to the signature.
+
+## Discussion
+
+**hyperspacebunny**
+
+Fixed in https://github.com/nftport/evm-minting-sherlock-fixes/pull/18
+
+**rayn731**
+
+Fixed, it checks expiration on `metadata.expiration`, and it follows EIP-712 standard for hashing and signing data.
+
+
 
 # Issue M-10: Missing check for equal length arrays in transferByOwnerBatch and mintByOwnerBatch 
 
@@ -487,4 +576,16 @@ require(ids.length == to.length, "mismatched array lengths");
 require(ids.length == amounts.length, "mismatched array lengths");
 require(ids.length == uris.length, "mismatched array lengths");
 ```
+
+## Discussion
+
+**hyperspacebunny**
+
+Fixed in https://github.com/nftport/evm-minting-sherlock-fixes/pull/13
+
+**rayn731**
+
+Fixed, checks the arrays' length should be equal.
+
+
 
